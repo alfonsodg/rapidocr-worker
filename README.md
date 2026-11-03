@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/alfonsodg/rapidocr-worker/actions/workflows/ci.yml/badge.svg)](https://github.com/alfonsodg/rapidocr-worker/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/alfonsodg/rapidocr-worker)](https://github.com/alfonsodg/rapidocr-worker/releases)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![crates.io](https://img.shields.io/crates/v/rapidocr-worker.svg)](https://crates.io/crates/rapidocr-worker)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/alfonsodg/rapidocr-worker/blob/main/LICENSE)
 
 High-throughput, standalone text-recognition worker written in Rust on top of
 ONNX Runtime (`ort`). It listens on a UNIX domain socket, runs the full PP-OCR
@@ -17,7 +18,7 @@ so multiple instances can serve sustained parallel traffic on a single host.
 
 - **Bounded memory**: inference scratch memory is returned to the OS after each
   page; measured post-load RSS stays flat at ~74 MB per worker under dense
-  workloads (see the [memory report](docs/MEMORY_OPTIMIZATION.md) and #19).
+  workloads (see the [memory report](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/MEMORY_OPTIMIZATION.md) and #19).
 - **Latin/Spanish fidelity**: preserves spaces, accents (`á, é, í, ó, ú`) and
   `ñ`. Parity against the Python engine is measured with
   `scripts/parity_harness.py`: mean similarity 0.9695 on the 22 in-scope
@@ -36,7 +37,7 @@ so multiple instances can serve sustained parallel traffic on a single host.
 - **PP-OCRv4 and PP-OCRv6 profiles**: `--det-profile`, `--det-normalization`
   and `--keys` support v6 models, including external character dictionaries.
 - **Simple protocol**: length-prefixed UNIX socket framing that any orchestrator
-  client can speak (see [API.md](docs/API.md)).
+  client can speak (see [API.md](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/API.md)).
 
 ## Requirements
 
@@ -44,7 +45,7 @@ so multiple instances can serve sustained parallel traffic on a single host.
 - ONNX Runtime shared library (`libonnxruntime.so`), loaded dynamically at
   runtime through `ORT_DYLIB_PATH`.
 - PP-OCR ONNX models: detection, direction classification and a Latin/Spanish
-  recognizer (see [INSTALL.md](docs/INSTALL.md) for candidates and sizes).
+  recognizer (see [INSTALL.md](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/INSTALL.md) for candidates and sizes).
 
 ## Install
 
@@ -61,6 +62,12 @@ sudo install -m 0755 rapidocr-worker-v<version>-x86_64-unknown-linux-gnu/rapidoc
 
 The archive also ships the systemd unit template (`rapidocr-worker@.service`),
 the README and the license.
+
+### Install from crates.io
+
+```bash
+cargo install rapidocr-worker
+```
 
 ### Build from source
 
@@ -91,15 +98,15 @@ ORT_DYLIB_PATH=/usr/local/lib/libonnxruntime.so \
 ### Run as a service
 
 A hardened systemd template unit lives in
-[`configs/systemd/rapidocr-worker@.service`](configs/systemd/rapidocr-worker@.service).
+[`configs/systemd/rapidocr-worker@.service`](https://github.com/alfonsodg/rapidocr-worker/blob/main/configs/systemd/rapidocr-worker@.service).
 It runs one worker instance per `%i` index, each with its own socket under
 `/run/rapidocr-rust-%i/`. Step-by-step host instructions (binary install, unit
-setup, scaling across CPU cores) are in [INSTALL.md](docs/INSTALL.md).
+setup, scaling across CPU cores) are in [INSTALL.md](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/INSTALL.md).
 
 ## Configuration
 
 The most common flags; the full reference with defaults and semantics is in
-[CONFIGURATION.md](docs/CONFIGURATION.md).
+[CONFIGURATION.md](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/CONFIGURATION.md).
 
 | Flag | Default | Purpose |
 |---|---|---|
@@ -142,7 +149,7 @@ Communication runs over UNIX domain stream sockets (`AF_UNIX`).
    ```
 
 The complete framing specification, error responses and a reference Python
-client are in [API.md](docs/API.md).
+client are in [API.md](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/API.md).
 
 ## Performance
 
@@ -151,7 +158,7 @@ Measured on a dual-socket Xeon host (48 logical threads, 8 worker instances):
 - Retained RSS is flat at ~73.7 MB per worker after dense engineering pages
   (589.9 MB for the whole 8-worker fleet, down from multi-GB retention before
   the arena fix); latency unchanged or slightly better, with byte-identical
-  output. Full numbers: [memory report](docs/MEMORY_OPTIMIZATION.md).
+  output. Full numbers: [memory report](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/MEMORY_OPTIMIZATION.md).
 - Recognition dominates runtime; the worker's USPs are bounded memory,
   deterministic behavior and isolation, not raw speed versus the Python engine.
 
@@ -170,15 +177,15 @@ Commits follow Conventional Commits with an issue reference
 
 ## Documentation
 
-- [Architecture Guide](docs/ARCHITECTURE.md): System components, pipeline stages, and threading model.
-- [Socket API Specification](docs/API.md): Binary frame format, JSON schemas, and client examples.
-- [Configuration Reference](docs/CONFIGURATION.md): Command-line options, environment variables, and client integration settings.
-- [Installation & Deployment Guide](docs/INSTALL.md): Prerequisites, build steps, systemd setup, and host deployment.
-- [Memory Optimization Report](docs/MEMORY_OPTIMIZATION.md): Root-cause analysis, TDD verification, and production benchmarks for RSS bounding (#19).
-- [Development Standards](docs/STANDARDS.md): Rust code quality, error handling, and testing policies.
-- [Mermaid Diagrams](docs/DIAGRAMS.md): High-level sequence and flow diagrams.
+- [Architecture Guide](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/ARCHITECTURE.md): System components, pipeline stages, and threading model.
+- [Socket API Specification](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/API.md): Binary frame format, JSON schemas, and client examples.
+- [Configuration Reference](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/CONFIGURATION.md): Command-line options, environment variables, and client integration settings.
+- [Installation & Deployment Guide](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/INSTALL.md): Prerequisites, build steps, systemd setup, and host deployment.
+- [Memory Optimization Report](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/MEMORY_OPTIMIZATION.md): Root-cause analysis, TDD verification, and production benchmarks for RSS bounding (#19).
+- [Development Standards](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/STANDARDS.md): Rust code quality, error handling, and testing policies.
+- [Mermaid Diagrams](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/DIAGRAMS.md): High-level sequence and flow diagrams.
 
 ## License
 
-Licensed under the [Apache License, Version 2.0](LICENSE).
+Licensed under the [Apache License, Version 2.0](https://github.com/alfonsodg/rapidocr-worker/blob/main/LICENSE).
 Copyright 2026 Alfonso de la Guarda.
