@@ -5,6 +5,21 @@ edition = "2021"
 description = "Standalone ONNX Runtime OCR worker (PP-OCR detection, classification and recognition) over UNIX domain sockets"
 license = "Apache-2.0"
 repository = "https://github.com/alfonsodg/rapidocr-worker"
+rust-version = "1.89"
+keywords = ["ocr", "onnx", "onnxruntime", "paddleocr", "text-recognition"]
+categories = ["computer-vision", "text-processing"]
+exclude = [
+  ".github",
+  ".editorconfig",
+  ".markdownlint.json",
+  ".pre-commit-config.yaml",
+  ".gitignore",
+  "secrets.baseline",
+  "rust-toolchain.toml",
+  "scripts",
+  "samples",
+  "reference",
+]
 
 [dependencies]
 ort = { version = "2.0.0-rc.13", default-features = false, features = ["std", "ndarray", "load-dynamic"] }
