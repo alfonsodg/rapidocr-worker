@@ -1,0 +1,46 @@
+name: Incident
+description: Report a service incident or a production outage.
+labels: ["priority::critical"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the incident.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      placeholder: |
+        - Severity: Critical / High / Medium / Low
+        - Users affected:
+        - Duration:
+    validations:
+      required: true
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline
+      placeholder: |
+        - Detected:
+        - Mitigated:
+        - Resolved:
+    validations:
+      required: false
+  - type: textarea
+    id: root_cause
+    attributes:
+      label: Root cause
+      description: What caused this?
+    validations:
+      required: false
+  - type: textarea
+    id: action_items
+    attributes:
+      label: Action items
+      placeholder: |
+        - [ ]
+    validations:
+      required: false

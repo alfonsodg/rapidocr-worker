@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Pre-commit hook: enforces project rules before commit. No Python required.
+set -euo pipefail
+
+STAGED=$(git diff --cached --diff-filter=ACMRTUXB --name-only)
+[ -z "$STAGED" ] && exit 0
+
+# 1. Reject hidden directories (.git, .github allowed).
+if ! scripts/hooks/check-hidden-dirs.sh; then
+  exit 1
+fi
+
+# 2. Reject forbidden files and agent directories.
+forbidden=$(echo "$STAGED" | grep -xE '\.env|\.env\..*|REMOTE\.md|todo\.json|.*\.jsonl|AGENTS\.md|CLAUDE\.md|GEMINI\.md|GROK\.md|\.github/copilot-instructions\.md' || true)
+agent_files=$(echo "$STAGED" | grep -E '^\.(kiro|claude|cursor|windsurf|codex|crush|aider|continue|cline|roo|factory|opencode|commandcode|antigravitycli|copilot)/' || true)
+if [ -n "$forbidden" ] || [ -n "$agent_files" ]; then
+  echo "❌ Forbidden files staged (never in git):"
+  [ -n "$forbidden" ] && echo "$forbidden"
+  [ -n "$agent_files" ] && echo "$agent_files"
+  exit 1
+fi
+
+# 3. Reject files larger than 1 MB.
+large=""
+while read -r f; do
+  [ -f "$f" ] || continue
+  size=$(stat -c%s "$f")
+  if [ "$size" -gt 1048576 ]; then
+    large="$large\n   $f ($size bytes)"
+  fi
+done <<< "$STAGED"
+if [ -n "$large" ]; then
+  echo -e "❌ Files larger than 1 MB staged:$large"
+  exit 1
+fi
+
+# 4. Reject source files exceeding 500 lines.
+oversized=""
+for f in $STAGED; do
+  [ -f "$f" ] || continue
+  echo "$f" | grep -qE '\.(py|ts|tsx|js|jsx|go|rs|java|rb|sh)$' || continue
+  lines=$(wc -l < "$f" 2>/dev/null || echo 0)
+  if [ "$lines" -gt 500 ]; then
+    oversized="$oversized\n   $f ($lines lines)"
+  fi
+done
+if [ -n "$oversized" ]; then
+  echo -e "❌ Files exceed 500 lines (split by responsibility):$oversized"
+  exit 1
+fi
+
+exit 0

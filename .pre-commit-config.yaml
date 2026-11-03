@@ -1,0 +1,68 @@
+# Pre-commit hooks — install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+        exclude: ^(package-lock\.json|tsconfig\.json)$
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1024']
+      - id: detect-private-key
+
+  # Secrets detection
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', 'secrets.baseline']
+        exclude: (package-lock\.json|secrets\.baseline)$
+
+  # Conventional commits
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'build', 'ci', 'chore', 'revert', 'infra']
+
+  # Debug statements
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: debug-statements
+
+  # Python — ruff (only if Python files exist)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.12
+    hooks:
+      - id: ruff
+        args: ['--fix']
+      - id: ruff-format
+
+  # JS/TS — eslint (only if eslint config exists)
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: npx eslint --fix
+        language: system
+        types_or: [javascript, tsx, ts, jsx]
+        pass_filenames: true
+        files: \.(js|jsx|ts|tsx)$
+
+  # Project policy: no hidden directories except .git/
+  - repo: local
+    hooks:
+      - id: check-hidden-dirs
+        name: check hidden directories
+        entry: scripts/hooks/check-hidden-dirs.sh
+        language: system
+        pass_filenames: false
+        always_run: true

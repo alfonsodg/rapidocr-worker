@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose a new capability or an improvement.
+labels: ["type::feature"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What do you need? Why?
+    validations:
+      required: true
+  - type: textarea
+    id: user_story
+    attributes:
+      label: User story
+      description: As a [role], I want [feature] so that [benefit].
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Technical notes
+      description: Architecture considerations, dependencies.
+    validations:
+      required: false

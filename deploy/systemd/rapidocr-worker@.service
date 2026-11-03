@@ -1,0 +1,22 @@
+[Unit]
+Description=Rust RapidOCR worker %i
+After=network.target
+
+[Service]
+Type=simple
+User=rapidocr
+Group=rapidocr
+WorkingDirectory=/opt/rapidocr-worker
+Environment=ORT_DYLIB_PATH=/usr/local/lib/libonnxruntime.so
+ExecStart=/usr/local/bin/rapidocr-worker --socket /run/rapidocr-rust-%i/worker.sock --det-model /opt/models/ch_PP-OCRv4_det_infer.onnx --cls-model /opt/models/ch_ppocr_mobile_v2.0_cls_infer.onnx --rec-model /opt/models/ppocrv5_latin_rec_mobile.onnx --limit-side-len 736 --threads 4
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=20
+RuntimeDirectory=rapidocr-rust-%i
+RuntimeDirectoryMode=0770
+NoNewPrivileges=true
+ReadWritePaths=/run/rapidocr-rust-%i
+RestrictAddressFamilies=AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

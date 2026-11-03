@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Commit-msg hook: enforces conventional format with issue reference.
+set -euo pipefail
+
+MSG_FILE="$1"
+SUBJECT=$(head -1 "$MSG_FILE")
+PATTERN='^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert|infra)\([a-z0-9_-]+\): .+ \(#[0-9]+\)$'
+
+# Allow merge commits.
+echo "$SUBJECT" | grep -qE '^Merge ' && exit 0
+
+if ! echo "$SUBJECT" | grep -qE "$PATTERN"; then
+  echo "❌ Commit message does not follow conventional format:"
+  echo "   $SUBJECT"
+  echo ""
+  echo "Required: <type>(<scope>): <subject> (#issue)"
+  echo "Example:  fix(auth): handle expired tokens (#42)"
+  echo ""
+  echo "Types: feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert|infra"
+  exit 1
+fi
+
+# Require Ref #N in body (ignore comment lines).
+if ! tail -n +2 "$MSG_FILE" | grep -vE '^#' | grep -qE 'Ref #[0-9]+'; then
+  echo "❌ Commit message body must contain an issue reference."
+  echo "   Required: Ref #<issue> in the body or footer."
+  exit 1
+fi
+
+exit 0

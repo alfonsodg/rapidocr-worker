@@ -1,0 +1,20 @@
+[package]
+name = "rapidocr-worker"
+version = "0.1.0"
+edition = "2021"
+description = "Standalone ONNX Runtime OCR worker (PP-OCR detection, classification and recognition) over UNIX domain sockets"
+license = "Apache-2.0"
+repository = "https://github.com/alfonsodg/rapidocr-worker"
+
+[dependencies]
+ort = { version = "2.0.0-rc.13", default-features = false, features = ["std", "ndarray", "load-dynamic"] }
+image = "0.25"
+ndarray = "0.17"
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = true
+codegen-units = 1
