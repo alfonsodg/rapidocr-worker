@@ -34,6 +34,8 @@ jobs:
         run: |
           set -euo pipefail
           image="ghcr.io/${GITHUB_REPOSITORY,,}:${TAG}"
+          archive="dist/rapidocr-worker-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+          test -f "$archive"
           echo "${GITHUB_TOKEN}" | oras login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
           oras push "$image" \
             --artifact-type application/vnd.rapidocr-worker.release.v1 \
@@ -41,6 +43,6 @@ jobs:
             --annotation "org.opencontainers.image.title=rapidocr-worker ${TAG}" \
             --annotation "org.opencontainers.image.description=Standalone ONNX Runtime OCR worker (PP-OCR) over UNIX domain sockets" \
             --annotation "org.opencontainers.image.licenses=Apache-2.0" \
-            dist/*.tar.gz:application/gzip \
-            dist/SHA256SUMS:text/plain
+            "${archive}:application/gzip" \
+            "dist/SHA256SUMS:text/plain"
           oras tag "$image" latest
