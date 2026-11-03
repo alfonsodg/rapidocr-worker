@@ -5,8 +5,12 @@ Format based on [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-03
+
 ### Added
 
+- Initial public release with prebuilt Linux x86_64 archives (binary + systemd
+  unit + checksums) and tag-driven release automation (#22).
 - PP-OCRv6 support: `--det-profile {ppocrv4,ppocrv6}` selects the detection
   post-processing, `--det-normalization {scalar,imagenet}` selects the input
   normalization, and `--keys` loads an external character dictionary for models

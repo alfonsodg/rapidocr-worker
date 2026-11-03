@@ -1,40 +1,84 @@
 # rapidocr-worker
 
 [![CI](https://github.com/alfonsodg/rapidocr-worker/actions/workflows/ci.yml/badge.svg)](https://github.com/alfonsodg/rapidocr-worker/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/alfonsodg/rapidocr-worker)](https://github.com/alfonsodg/rapidocr-worker/releases)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-High-throughput, standalone text-recognition worker written in Rust using ONNX Runtime (`ort`). It listens on a UNIX domain socket, processes images through the full PP-OCR pipeline (Detection + Classification + Latin/Spanish Recognition) with strictly bounded CPU threads, and returns extracted text and confidence scores in JSON.
+High-throughput, standalone text-recognition worker written in Rust on top of
+ONNX Runtime (`ort`). It listens on a UNIX domain socket, runs the full PP-OCR
+pipeline — detection, direction classification and Latin/Spanish recognition —
+with strictly bounded CPU threads, and returns extracted text and confidence
+scores as JSON.
 
-Runs as an isolated UNIX-socket daemon with bounded memory and no Python GIL contention, allowing sustained parallel processing across multiple worker instances. Parity and performance against the Python engine are tracked with measured evidence in issues #6 and #8.
+It runs as an isolated daemon with bounded memory and no Python GIL contention,
+so multiple instances can serve sustained parallel traffic on a single host.
 
-## Core Features
+## Features
 
-- **Parity Under Measurement**: Preserves spaces, accents (`á, é, í, ó, ú`) and `ñ` with the Latin model (`ppocrv5_latin_rec_mobile.onnx`). The parity harness (`scripts/parity_harness.py`) measured a mean similarity of 0.9695 on the 22 in-scope samples (run recorded in #8) against the `>= 0.99` gate agreed in #6; the gate is not met yet.
-- **Full Latin & Spanish Support**: Full preservation of spaces, accents (`á, é, í, ó, ú`), and `ñ` using `ppocrv5_latin_rec_mobile.onnx`.
-- **Natural Reading Order**: Automatic horizontal band grouping and left-to-right sorting of detected text blocks.
-- **Aspect-Ratio Bucketing & Adaptive Batching**: Groups crops by aspect ratio and dynamically scales compact batches up to 2x base size, minimizing zero-padding overhead.
-- **Optional Sampled Direction Classification**: Opt-in page orientation consensus (disabled by default) that skips per-box CLS on confidently upright scans, with automatic per-box fallback on any inverted or mixed evidence.
-- **Session-Pooled Concurrency**: Scoped worker threads distribute recognition batches across CPU cores without thread barrier contention.
-- **Drop-in Protocol Compatibility**: Implements a length-prefixed socket contract that any orchestrator client can speak.
+- **Bounded memory**: inference scratch memory is returned to the OS after each
+  page; measured post-load RSS stays flat at ~74 MB per worker under dense
+  workloads (see the [memory report](docs/MEMORY_OPTIMIZATION.md) and #19).
+- **Latin/Spanish fidelity**: preserves spaces, accents (`á, é, í, ó, ú`) and
+  `ñ`. Parity against the Python engine is measured with
+  `scripts/parity_harness.py`: mean similarity 0.9695 on the 22 in-scope
+  samples against the `>= 0.99` gate agreed in #6 (tracked in #8; the gate is
+  not met yet).
+- **Natural reading order**: horizontal band grouping and left-to-right sorting
+  of detected text blocks.
+- **Aspect-ratio bucketing & adaptive batching**: groups crops by aspect ratio
+  and scales compact batches up to 2x base size, minimizing zero-padding
+  overhead.
+- **Optional sampled direction classification**: opt-in page orientation
+  consensus (`--cls-sampled`) that skips per-box CLS on confidently upright
+  scans, with automatic per-box fallback on any inverted or mixed evidence.
+- **Session-pooled concurrency**: scoped worker threads distribute recognition
+  batches across CPU cores without thread-barrier contention.
+- **PP-OCRv4 and PP-OCRv6 profiles**: `--det-profile`, `--det-normalization`
+  and `--keys` support v6 models, including external character dictionaries.
+- **Simple protocol**: length-prefixed UNIX socket framing that any orchestrator
+  client can speak (see [API.md](docs/API.md)).
 
-## Quick Start
+## Requirements
 
-### Build
+- Linux x86_64 (builds with Rust 1.89+, pinned in `rust-toolchain.toml`).
+- ONNX Runtime shared library (`libonnxruntime.so`), loaded dynamically at
+  runtime through `ORT_DYLIB_PATH`.
+- PP-OCR ONNX models: detection, direction classification and a Latin/Spanish
+  recognizer (see [INSTALL.md](docs/INSTALL.md) for candidates and sizes).
+
+## Install
+
+### Prebuilt release binary
+
+Download the archive for your system from the
+[Releases](https://github.com/alfonsodg/rapidocr-worker/releases/latest) page
+and verify it against `SHA256SUMS`:
 
 ```bash
-# Clone the repository
+tar -xzf rapidocr-worker-v<version>-x86_64-unknown-linux-gnu.tar.gz
+sudo install -m 0755 rapidocr-worker-v<version>-x86_64-unknown-linux-gnu/rapidocr-worker /usr/local/bin/
+```
+
+The archive also ships the systemd unit template (`rapidocr-worker@.service`),
+the README and the license.
+
+### Build from source
+
+```bash
 git clone git@github.com:alfonsodg/rapidocr-worker.git
 cd rapidocr-worker
 
-# Build optimized release binary
+# Build the optimized release binary
 cargo build --release
 
-# Run unit tests
+# Run the test suite
 cargo test
 ```
 
-### Run Locally
+## Run
 
 ```bash
+ORT_DYLIB_PATH=/usr/local/lib/libonnxruntime.so \
 ./target/release/rapidocr-worker \
   --socket /run/rapidocr-rust-1/worker.sock \
   --det-model /opt/models/ch_PP-OCRv4_det_infer.onnx \
@@ -44,26 +88,87 @@ cargo test
   --threads 4
 ```
 
+### Run as a service
+
+A hardened systemd template unit lives in
+[`configs/systemd/rapidocr-worker@.service`](configs/systemd/rapidocr-worker@.service).
+It runs one worker instance per `%i` index, each with its own socket under
+`/run/rapidocr-rust-%i/`. Step-by-step host instructions (binary install, unit
+setup, scaling across CPU cores) are in [INSTALL.md](docs/INSTALL.md).
+
+## Configuration
+
+The most common flags; the full reference with defaults and semantics is in
+[CONFIGURATION.md](docs/CONFIGURATION.md).
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--socket <path>` | required | UNIX domain socket to listen on |
+| `--det-model`, `--cls-model`, `--rec-model` | required (det, rec) | ONNX model paths |
+| `--threads <n>` | `4` | Intra-op thread budget, split across recognition sessions |
+| `--limit-side-len <n>` | `736` | Shorter image side is scaled to this before detection (`limit_type=min`) |
+| `--rec-batch <n>` | `6` | Base recognition batch size; compact crops scale up to 2x |
+| `--rec-workers <n>` | `1` | Parallel recognition session workers (scoped threads) |
+| `--no-arena` | off | Disable the ONNX CPU memory arena to bound RSS (#19) |
+| `--det-profile`, `--det-normalization` | `ppocrv4`, `scalar` | Detection post-processing and normalization profiles (PP-OCRv4/v6) |
+| `--keys <path>` | — | External character dictionary for models without embedded metadata |
+
+Environment variables: `ORT_DYLIB_PATH` (required), `RUST_LOG` (optional,
+default `info`).
+
 ## Socket Protocol
 
 Communication runs over UNIX domain stream sockets (`AF_UNIX`).
 
-1. **Request Frame**:
-   - `>II` header (4-byte `meta_len` + 4-byte `image_len`, big-endian).
+1. **Request frame**:
+   - `>II` header: 4-byte `meta_len` + 4-byte `image_len`, big-endian.
    - `meta_len` bytes: UTF-8 JSON metadata (e.g. `{"media_type":"image/png"}`).
-   - `image_len` bytes: Raw image data.
+   - `image_len` bytes: raw image data (PNG, JPEG, TIFF, BMP, WebP).
 
-2. **Response Frame**:
-   - `>I` header (4-byte `payload_len`, big-endian).
-   - `payload_len` bytes: UTF-8 JSON payload:
+2. **Response frame**:
+   - `>I` header: 4-byte `payload_len`, big-endian.
+   - `payload_len` bytes: UTF-8 JSON payload.
 
-     ```json
-     {"ok": true, "text": "Recognized text...", "confidence": 0.985, "elapsed_s": 0.34}
-     ```
+   ```json
+   {
+     "ok": true,
+     "text": "Recognized line 1\nRecognized line 2",
+     "confidence": 0.985,
+     "elapsed_s": 0.34,
+     "det_ms": 210.4,
+     "cls_ms": 12.7,
+     "rec_ms": 119.0
+   }
+   ```
+
+The complete framing specification, error responses and a reference Python
+client are in [API.md](docs/API.md).
+
+## Performance
+
+Measured on a dual-socket Xeon host (48 logical threads, 8 worker instances):
+
+- Retained RSS is flat at ~73.7 MB per worker after dense engineering pages
+  (589.9 MB for the whole 8-worker fleet, down from multi-GB retention before
+  the arena fix); latency unchanged or slightly better, with byte-identical
+  output. Full numbers: [memory report](docs/MEMORY_OPTIMIZATION.md).
+- Recognition dominates runtime; the worker's USPs are bounded memory,
+  deterministic behavior and isolation, not raw speed versus the Python engine.
+
+## Development
+
+```bash
+cargo test                        # Rust unit + integration tests
+cargo clippy --all-targets -- -D warnings
+cargo fmt --check
+pytest tests/                     # Python contract tests
+bash scripts/install-hooks.sh     # optional local git hooks
+```
+
+Commits follow Conventional Commits with an issue reference
+(`type(scope): subject (#issue)`).
 
 ## Documentation
-
-Detailed documentation is available in the [`docs/`](docs/) directory:
 
 - [Architecture Guide](docs/ARCHITECTURE.md): System components, pipeline stages, and threading model.
 - [Socket API Specification](docs/API.md): Binary frame format, JSON schemas, and client examples.
