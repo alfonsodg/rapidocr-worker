@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/alfonsodg/rapidocr-worker/actions/workflows/ci.yml/badge.svg)](https://github.com/alfonsodg/rapidocr-worker/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/alfonsodg/rapidocr-worker)](https://github.com/alfonsodg/rapidocr-worker/releases)
-[![crates.io](https://img.shields.io/crates/v/rapidocr-worker.svg)](https://crates.io/crates/rapidocr-worker)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/alfonsodg/rapidocr-worker/blob/main/LICENSE)
 
 High-throughput, standalone text-recognition worker written in Rust on top of
@@ -63,10 +62,10 @@ sudo install -m 0755 rapidocr-worker-v<version>-x86_64-unknown-linux-gnu/rapidoc
 The archive also ships the systemd unit template (`rapidocr-worker@.service`),
 the README and the license.
 
-### Install from crates.io
+The same archive is available from GitHub Packages as an OCI artifact:
 
 ```bash
-cargo install rapidocr-worker
+oras pull ghcr.io/alfonsodg/rapidocr-worker:latest
 ```
 
 ### Build from source

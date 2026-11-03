@@ -5,6 +5,11 @@ Format based on [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Release artifacts are also published as an OCI package on GitHub Packages
+  (`ghcr.io/alfonsodg/rapidocr-worker`), on every release and on demand (#26).
+
 ## [0.1.0] - 2026-11-03
 
 ### Added
