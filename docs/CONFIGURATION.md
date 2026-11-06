@@ -62,6 +62,26 @@ Generate the keys file from the model's `inference.yml`: take the
 line and no added space. The decoder inserts `blank` at index 0 and the space at
 the end itself, matching the embedded-metadata layout.
 
+A published Spanish pair uses the same mechanism: the checkpoint has no embedded
+metadata, so it must be loaded with its own dictionary.
+
+```bash
+/usr/local/bin/rapidocr-worker \
+  --socket /run/rapidocr-rust-1/worker.sock \
+  --det-model /opt/models/ch_PP-OCRv4_det_infer.onnx \
+  --cls-model /opt/models/ch_ppocr_mobile_v2.0_cls_infer.onnx \
+  --rec-model /opt/models/spanish_rec_v18.onnx \
+  --keys /opt/models/ppocr_keys_es.txt \
+  --threads 4
+```
+
+Both files come from the RapidOCR release `spanish-multidoc-v1`
+(<https://github.com/alfonsodg/RapidOCR/releases/tag/spanish-multidoc-v1>) and are
+mirrored on Hugging Face
+(<https://huggingface.co/alfonsodlg/rapidocr-spanish>). Mixing the checkpoint with
+a different vocabulary does not fail loudly: it decodes valid-looking text from
+shifted indices.
+
 ## Environment Variables
 
 | Variable | Required | Default | Description |

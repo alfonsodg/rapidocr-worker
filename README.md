@@ -102,6 +102,40 @@ It runs one worker instance per `%i` index, each with its own socket under
 `/run/rapidocr-rust-%i/`. Step-by-step host instructions (binary install, unit
 setup, scaling across CPU cores) are in [INSTALL.md](https://github.com/alfonsodg/rapidocr-worker/blob/main/docs/INSTALL.md).
 
+### Spanish checkpoints
+
+The recognizer accepts any PP-OCR-compatible ONNX model. A Spanish-tuned pair —
+a 116-character vocabulary plus two fine-tuned checkpoints — is published
+separately and loads through the existing flags, with no code change:
+
+```bash
+ORT_DYLIB_PATH=/usr/local/lib/libonnxruntime.so \
+./target/release/rapidocr-worker \
+  --socket /run/rapidocr-rust-1/worker.sock \
+  --det-model /opt/models/ch_PP-OCRv4_det_infer.onnx \
+  --cls-model /opt/models/ch_ppocr_mobile_v2.0_cls_infer.onnx \
+  --rec-model /opt/models/spanish_rec_v18.onnx \
+  --keys /opt/models/ppocr_keys_es.txt \
+  --threads 4
+```
+
+`--keys` is mandatory for this pair: the checkpoint carries no embedded
+character metadata, and loading it with another vocabulary corrupts CTC decoding
+silently — the output still looks like text, with shifted indices.
+
+| asset | where |
+| --- | --- |
+| `spanish_rec_v18.onnx` | RapidOCR release `spanish-multidoc-v1` |
+| `spanish_rec_v19.onnx` | same release (alternative for receipts and records) |
+| `ppocr_keys_es.txt` | same release, and committed in the RapidOCR branch |
+
+Release: <https://github.com/alfonsodg/RapidOCR/releases/tag/spanish-multidoc-v1>
+Hugging Face: <https://huggingface.co/alfonsodlg/rapidocr-spanish>
+
+Measured against the stock Latin checkpoint on 3,079 held-out crops (44,947
+reference characters, 14 Spanish document types): CER micro 0.1476 against
+0.1745, macro 0.1238 against 0.1412.
+
 ## Configuration
 
 The most common flags; the full reference with defaults and semantics is in
